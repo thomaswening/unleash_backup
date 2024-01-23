@@ -113,6 +113,35 @@ def restore_evga_profiles(backup_dir, unleash_path):
     
     subprocess.Popen([unleash_path])
 
+def find_unleash_executable():
+    '''Search for UnleashRGB.exe in common installation paths.'''
+    common_paths = [
+        r'C:\Program Files (x86)\EVGA\Unleash RGB\UnleashRGB.exe',
+        r'C:\Program Files\EVGA\Unleash RGB\UnleashRGB.exe'
+    ]
+    for path in common_paths:
+        if os.path.exists(path):
+            return path
+    return None
+
+def get_unleash_path(user_provided_path):
+    '''Validate the UnleashRGB.exe path and ask user if not found.'''
+    if os.path.exists(user_provided_path):
+        return user_provided_path
+
+    print(f"UnleashRGB.exe not found at {user_provided_path}. Searching common installation paths...")
+    found_path = find_unleash_executable()
+    if found_path:
+        print(f"UnleashRGB.exe found at {found_path}")
+        return found_path
+
+    while True:
+        user_input = input("Search unsuccessful. Please enter the correct path to UnleashRGB.exe: ")
+        if os.path.exists(user_input):
+            print(f"UnleashRGB.exe found at {user_input}")
+            return user_input
+        print("Invalid path. UnleashRGB.exe not found.")
+
 def main():
     parser = argparse.ArgumentParser(description='Backup and Restore EVGA Z20/Z15 keyboards\' custom key color layers.')
     parser.add_argument('-d', '--directory', default=os.path.dirname(os.path.abspath(__file__)), help='Path to the backup directory. Default is the script directory.')
@@ -120,8 +149,10 @@ def main():
     parser.add_argument('-p', '--path', default=r'C:\Program Files (x86)\EVGA\Unleash RGB\UnleashRGB.exe', help='Path to the UnleashRGB.exe executable. Default is \'C:\\Program Files (x86)\\EVGA\\Unleash RGB\\UnleashRGB.exe\'.')
     args = parser.parse_args()
 
+    unleash_path = get_unleash_path(args.path)
+
     if args.restore:
-        restore_evga_profiles(args.directory, args.path)
+        restore_evga_profiles(args.directory, unleash_path)
     else:
         backup_evga_profiles(args.directory)
 
