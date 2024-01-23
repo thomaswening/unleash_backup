@@ -124,10 +124,19 @@ def find_unleash_executable():
             return path
     return None
 
-def get_unleash_path(user_provided_path):
+def get_unleash_path(user_provided_path, backup_path):
     '''Validate the UnleashRGB.exe path and ask user if not found.'''
     if os.path.exists(user_provided_path):
         return user_provided_path
+
+    path_file = os.path.join(backup_path, 'unleash_path.txt')
+
+    if os.path.exists(path_file):
+        with open(path_file, 'r') as file:
+            stored_path = file.read().strip()
+
+        if os.path.exists(stored_path):
+            return stored_path
 
     print(f"UnleashRGB.exe not found at {user_provided_path}. Searching common installation paths...")
     found_path = find_unleash_executable()
@@ -142,6 +151,23 @@ def get_unleash_path(user_provided_path):
             return user_input
         print("Invalid path. UnleashRGB.exe not found.")
 
+
+def store_exe_path(backup_dir, unleash_path):
+    '''Store the path to the UnleashRGB.exe in a text file in the backup directory, only if it has changed.'''
+    path_file = os.path.join(backup_dir, 'unleash_path.txt')
+    existing_path = None
+
+    if os.path.exists(path_file):
+        with open(path_file, 'r') as file:
+            existing_path = file.read().strip()
+
+    if existing_path != unleash_path:
+        with open(path_file, 'w') as file:
+            file.write(unleash_path)
+
+        print(f'Path to UnleashRGB.exe updated and stored in {path_file}')
+
+
 def main():
     parser = argparse.ArgumentParser(description='Backup and Restore EVGA Z20/Z15 keyboards\' custom key color layers.')
     parser.add_argument('-d', '--directory', default=os.path.dirname(os.path.abspath(__file__)), help='Path to the backup directory. Default is the script directory.')
@@ -149,7 +175,8 @@ def main():
     parser.add_argument('-p', '--path', default=r'C:\Program Files (x86)\EVGA\Unleash RGB\UnleashRGB.exe', help='Path to the UnleashRGB.exe executable. Default is \'C:\\Program Files (x86)\\EVGA\\Unleash RGB\\UnleashRGB.exe\'.')
     args = parser.parse_args()
 
-    unleash_path = get_unleash_path(args.path)
+    unleash_path = get_unleash_path(args.path, args.directory)
+    store_exe_path(args.directory, unleash_path)
 
     if args.restore:
         restore_evga_profiles(args.directory, unleash_path)
